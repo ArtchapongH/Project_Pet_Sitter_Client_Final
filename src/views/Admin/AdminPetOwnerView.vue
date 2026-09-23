@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { API_BASE_URL } from '../../config/api'
 
 interface PetOwner {
 	id: string
@@ -22,8 +23,6 @@ interface OwnerAdminPageResponse {
 	totalItems: number
 	limit: number
 }
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 const router = useRouter()
 const store = useAdminPetOwnerStore()

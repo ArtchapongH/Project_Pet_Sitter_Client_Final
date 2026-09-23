@@ -3,12 +3,12 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { API_BASE_URL } from '../../config/api'
 
 interface OwnerBanStatusResponse {
 	isBanned: boolean | null
 }
 
-const API_BASE_URL = 'http://localhost:8081/api'
 const route = useRoute()
 const router = useRouter()
 const store = useAdminPetOwnerStore()

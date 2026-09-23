@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import { API_BASE_URL } from '../../config/api'
 
 interface Pet {
 	id: number
@@ -18,7 +19,6 @@ interface OwnerPetResponse {
 	pets: Pet[]
 }
 
-const API_BASE_URL = 'http://localhost:8081/api'
 const route = useRoute()
 const router = useRouter()
 const owner = ref<Pick<OwnerPetResponse, 'id' | 'name'> | null>(null)

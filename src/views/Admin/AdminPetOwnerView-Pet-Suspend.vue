@@ -2,8 +2,8 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
+import { API_BASE_URL } from '../../config/api'
 
-const API_BASE_URL = 'http://localhost:8081/api'
 const route = useRoute()
 const router = useRouter()
 const isSubmitting = ref(false)

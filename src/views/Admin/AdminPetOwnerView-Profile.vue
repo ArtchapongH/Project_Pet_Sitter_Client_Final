@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { API_BASE_URL } from '../../config/api'
 
 type OwnerTab = 'Profile' | 'Pets' | 'Reviews'
 
@@ -17,8 +18,6 @@ interface OwnerDetail {
 	avatarUrl: string | null
 	isBanned: boolean | null
 }
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 const route = useRoute()
 const router = useRouter()
