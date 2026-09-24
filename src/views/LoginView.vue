@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import OwnerModal from "../components/owner/OwnerModal.vue";
 import SocialLoginButtons from "../components/SocialLoginButtons.vue";
 import { useAuthRole } from "../composables/useAuthRole";
 import { useAuthStore } from "../stores/auth";
@@ -18,8 +19,9 @@ const notice = ref("");
 async function submitLogin() {
   notice.value = "";
   try {
-    await auth.login(email.value, password.value);
-    void router.push(auth.role === "sitter" ? "/sitter/profile" : "/owner/profile");
+    const targetRole = isOwner.value ? "owner" : "sitter";
+    await auth.login(email.value, password.value, targetRole);
+    void router.push(targetRole === "sitter" ? "/sitter/profile" : "/owner/profile");
   } catch (cause) {
     notice.value = cause instanceof Error ? cause.message : "Login failed";
   }
@@ -32,6 +34,10 @@ function continueWith(provider: "Facebook" | "Google") {
 
 <template>
   <main class="auth-page">
+    <div class="auth-art" aria-hidden="true">
+      <img src="/image/paw-yellow.svg" alt="" class="auth-art-paw" />
+      <img src="/image/corner-bottom-left.svg" alt="" class="auth-art-corner" />
+    </div>
     <form class="auth-form" @submit.prevent="submitLogin">
       <h1 class="auth-title">
         {{ isOwner ? "Welcome back!" : "Welcome Back!" }}
@@ -131,7 +137,20 @@ function continueWith(provider: "Facebook" | "Google") {
         @facebook="continueWith('Facebook')"
         @google="continueWith('Google')"
       />
-      <p v-if="notice" class="auth-notice" role="status">{{ notice }}</p>
+      <OwnerModal :open="notice !== ''" @close="notice = ''">
+        <div class="flex flex-nowrap items-center justify-between gap-4 border-b border-primary-100 pb-4">
+          <h2 class="text-xl font-bold leading-none">Notification</h2>
+          <button type="button" class="inline-flex size-10 shrink-0 items-center justify-center text-primary-900" aria-label="Close" @click="notice = ''">
+            <svg viewBox="0 0 24 24" class="size-8" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path stroke-linecap="round" d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <p class="mt-6 text-primary-500">{{ notice }}</p>
+        <div class="mt-8 flex justify-end">
+          <button type="button" class="auth-submit w-auto px-8 whitespace-nowrap" @click="notice = ''">Close</button>
+        </div>
+      </OwnerModal>
       <p class="auth-switch">
         {{
           isOwner

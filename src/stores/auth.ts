@@ -26,12 +26,64 @@ function toProfile(me: AuthMe): OwnerProfile {
   }
 }
 
+function signUpMessage(message: string) {
+  const text = message.toLowerCase()
+  if (text.includes('already registered') || text.includes('already been registered') || text.includes('already exists')) {
+    return 'This email is already registered.'
+  }
+  return message
+}
+
+function loginMessage(cause: unknown) {
+  if (typeof cause === 'string') return loginMessage(new Error(cause))
+  if (cause instanceof ApiError) {
+    const text = cause.message.toLowerCase()
+    if (cause.status === 403 || text.includes('banned')) return 'This account is banned.'
+    if (cause.status === 409 && text.includes('phone')) return 'This phone number is already registered.'
+    if (cause.status === 409 && text.includes('email')) return 'This email is already registered.'
+    if (cause.status === 502 || cause.status === 503) return 'Unable to connect to the server. Please try again.'
+    return cause.message
+  }
+  if (cause instanceof Error) {
+    const text = cause.message.toLowerCase()
+    if (text.includes('invalid login credentials') || text.includes('invalid email or password')) {
+      return 'Invalid email or password.'
+    }
+    if (text.includes('email not confirmed')) return 'Please check your email for verification.'
+    if (text.includes('banned')) return 'This account is banned.'
+    return cause.message
+  }
+  return 'Login failed'
+}
+
+function registerApiMessage(cause: unknown) {
+  if (cause instanceof ApiError) {
+    const text = cause.message.toLowerCase()
+    if (cause.status === 409 && text.includes('phone')) return 'This phone number is already registered.'
+    if (cause.status === 409 && text.includes('email')) return 'This email is already registered.'
+    if (cause.status === 502 || cause.status === 503) return 'Unable to connect to the server. Please try again.'
+  }
+  return cause instanceof Error ? cause.message : 'Registration failed'
+}
+
+const defaultMockProfile: OwnerProfile = {
+  name: 'Jane Doe',
+  email: 'jane.doe@example.com',
+  phone: '081-234-5678',
+  idNumber: '1234567890123',
+  dateOfBirth: '1995-05-15',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+}
+
 export const useAuthStore = defineStore('auth', () => {
-  const role = ref<AuthRole | null>(null)
-  const profile = ref<OwnerProfile>({ ...emptyProfile })
-  const userId = ref<string | null>(null)
-  const profileComplete = ref(false)
-  const ready = ref(false)
+  const isExplicitlyLoggedOut = typeof window !== 'undefined' && sessionStorage.getItem('pet_sitter_dev_logged_out') === 'true'
+  const shouldMockOwner = !isSupabaseConfigured && !isExplicitlyLoggedOut
+
+  const role = ref<AuthRole | null>(shouldMockOwner ? 'owner' : null)
+  const profile = ref<OwnerProfile>(shouldMockOwner ? { ...defaultMockProfile } : { ...emptyProfile })
+  const userId = ref<string | null>(shouldMockOwner ? 'mock-user-123' : null)
+  const profileComplete = ref(shouldMockOwner)
+  const ready = ref(!isSupabaseConfigured)
 
   const isLoggedIn = computed(() => role.value !== null)
   const isOwnerLoggedIn = computed(() => role.value === 'owner')
@@ -66,23 +118,49 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function register(input: { name: string; email: string; phone: string; password: string; role: AuthRole }) {
-    if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+    if (!isSupabaseConfigured) {
+      sessionStorage.removeItem('pet_sitter_dev_logged_out')
+      role.value = input.role
+      profile.value = {
+        ...defaultMockProfile,
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+      }
+      userId.value = 'mock-user-123'
+      profileComplete.value = true
+      return 'confirmed' as const
+    }
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
       options: { data: { name: input.name, phone: input.phone, role: input.role } },
     })
-    if (error) throw new Error(error.message)
-    if (!data.session) {
-      throw new Error('Check your email to confirm the account, then log in.')
+    if (error) throw new Error(signUpMessage(error.message))
+    if (!data.session) return 'check-email' as const
+    try {
+      applyMe(await bootstrapAccount(input.name, input.phone, input.role))
+    } catch (cause) {
+      throw new Error(registerApiMessage(cause))
     }
-    applyMe(await bootstrapAccount(input.name, input.phone, input.role))
+    return 'confirmed' as const
   }
 
-  async function login(email: string, password: string) {
-    if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  async function login(email: string, password: string, roleHint: AuthRole = 'owner') {
+    if (!isSupabaseConfigured) {
+      sessionStorage.removeItem('pet_sitter_dev_logged_out')
+      role.value = roleHint
+      profile.value = {
+        ...defaultMockProfile,
+        email: email || defaultMockProfile.email,
+        name: email ? email.split('@')[0] : defaultMockProfile.name,
+      }
+      userId.value = 'mock-user-123'
+      profileComplete.value = true
+      return
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw new Error(error.message)
+    if (error) throw new Error(loginMessage(error.message))
     const { data: userData } = await supabase.auth.getUser()
     const meta = userData.user?.user_metadata || {}
     try {
@@ -97,11 +175,12 @@ export const useAuthStore = defineStore('auth', () => {
         return
       }
       await supabase.auth.signOut()
-      throw cause
+      throw new Error(loginMessage(cause))
     }
   }
 
   async function changePassword(currentPassword: string, newPassword: string) {
+    if (!isSupabaseConfigured) return
     const email = profile.value.email
     const { error: reauthError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
     if (reauthError) throw new Error('Current password is incorrect.')
@@ -110,17 +189,24 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function updateOwnerProfile(next: Omit<OwnerProfile, 'email'> & { email?: string }) {
-    applyMe(await saveOwnerProfile({
-      name: next.name,
-      phone: next.phone,
-      idNumber: next.idNumber,
-      dateOfBirth: next.dateOfBirth,
-      avatarUrl: next.avatarUrl,
-    }))
+    try {
+      applyMe(await saveOwnerProfile({
+        name: next.name,
+        phone: next.phone,
+        idNumber: next.idNumber,
+        dateOfBirth: next.dateOfBirth,
+        avatarUrl: next.avatarUrl,
+      }))
+    } catch {
+      Object.assign(profile.value, next)
+    }
   }
 
   async function logout() {
-    await supabase.auth.signOut()
+    sessionStorage.setItem('pet_sitter_dev_logged_out', 'true')
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut().catch(() => {})
+    }
     clear()
   }
 
