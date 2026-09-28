@@ -61,7 +61,7 @@ const isActive = (item: SidebarItem) => computed(() => currentPath.value.startsW
     </nav>
 
     <RouterLink
-      to="/login"
+      to="/admin/login"
       class="mt-auto flex h-[54px] items-center gap-3 border-t border-[#1d1f24] px-4 text-[12px] font-medium text-[#f3f5fa] transition-colors hover:bg-[#171a1f]"
     >
       <svg class="h-[15px] w-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" aria-hidden="true">

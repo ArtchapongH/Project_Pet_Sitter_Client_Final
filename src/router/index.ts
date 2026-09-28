@@ -6,6 +6,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: () => import('../views/LandingView.vue') },
     { path: '/login', component: () => import('../views/LoginView.vue') },
+    { path: '/admin/login', component: () => import('../views/Admin/AdminLoginView.vue') },
     { path: '/register', component: () => import('../views/RegisterView.vue') },
     { path: '/search', component: () => import('../views/SitterSearchView.vue') },
     { path: '/sitters/:id', component: () => import('../views/PublicSitterProfileView.vue') },
