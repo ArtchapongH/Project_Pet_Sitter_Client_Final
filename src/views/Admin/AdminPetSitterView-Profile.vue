@@ -73,11 +73,13 @@ interface SitterProfileDetailResponse {
 	sitterProfile: SitterProfileDetail
 	user: SitterUser
 	petTypes: PetType[]
+	photoUrls: string[]
 }
 
 const profile = ref<SitterProfileDetail | null>(null)
 const sitterUser = ref<SitterUser | null>(null)
 const petTypes = ref<PetType[]>([])
+const sitterPhotoUrls = ref<string[]>([])
 const pendingProfile = ref<PendingProfile | null>(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -101,6 +103,7 @@ const displayMyPlace = computed(() => (usePendingProfile.value ? pendingProfile.
 const displayLatitude = computed(() => (usePendingProfile.value ? pendingProfile.value?.latitude : profile.value?.latitude) ?? null)
 const displayLongitude = computed(() => (usePendingProfile.value ? pendingProfile.value?.longitude : profile.value?.longitude) ?? null)
 const displayPetTypeNames = computed<string[]>(() => (usePendingProfile.value ? pendingProfile.value?.petTypes ?? [] : petTypes.value.map((petType) => petType.name)))
+const displayPhotoUrls = computed<string[]>(() => (usePendingProfile.value ? pendingProfile.value?.photoUrls ?? [] : sitterPhotoUrls.value))
 
 const fetchSitterDetail = async (id: string) => {
 	isLoading.value = true
@@ -110,6 +113,7 @@ const fetchSitterDetail = async (id: string) => {
 		profile.value = response.data.sitterProfile
 		sitterUser.value = response.data.user
 		petTypes.value = response.data.petTypes || []
+		sitterPhotoUrls.value = response.data.photoUrls || []
 		approvalStatus.value = response.data.sitterProfile.approvalStatus
 		isListed.value = response.data.sitterProfile.listed
 		const rawPendingProfile = response.data.sitterProfile.pendingProfile
@@ -330,6 +334,12 @@ const fullAddress = () => {
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">My Place</h2>
 						<p class="mt-1 text-[10px] leading-[1.5]">{{ displayMyPlace || '-' }}</p>
+
+						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Image Gallery</h2>
+						<div class="mt-2 flex flex-wrap gap-3">
+							<img v-for="photoUrl in displayPhotoUrls" :key="photoUrl" :src="photoUrl" alt="Sitter gallery photo" class="h-28 w-40 rounded-md object-cover" />
+							<span v-if="displayPhotoUrls.length === 0" class="text-[9px] text-[#9297a9]">No gallery photos uploaded.</span>
+						</div>
 					</div>
 
 					<div v-if="profile?.pet_sitter_state === 3" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
