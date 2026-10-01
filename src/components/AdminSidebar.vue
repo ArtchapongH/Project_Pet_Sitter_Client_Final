@@ -70,6 +70,8 @@ const isActive = (item: SidebarItem) => computed(() => currentPath.value.startsW
 
     <button
       type="button"
+    <RouterLink
+      to="/admin/login"
       class="mt-auto flex h-[54px] items-center gap-3 border-t border-[#1d1f24] px-4 text-[12px] font-medium text-[#f3f5fa] transition-colors hover:bg-[#171a1f]"
       @click="logout"
     >
