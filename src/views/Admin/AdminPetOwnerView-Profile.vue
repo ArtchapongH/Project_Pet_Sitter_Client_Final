@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
@@ -40,7 +40,7 @@ const fetchOwner = async (ownerId: string) => {
 	errorMessage.value = ''
 
 	try {
-		const response = await axios.get<OwnerDetail>(`${API_BASE_URL}/admin/owners/${ownerId}`)
+		const response = await adminApi.get<OwnerDetail>(`/admin/owners/${ownerId}`)
 		owner.value = response.data
 		store.selectOwner(response.data.id, response.data.name)
 		store.setSelectedOwnerIsBanned(response.data.isBanned)

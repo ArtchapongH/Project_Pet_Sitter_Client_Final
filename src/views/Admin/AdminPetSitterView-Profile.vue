@@ -4,9 +4,8 @@ import SitterLocationMap from '../../components/admin/SitterLocationMap.vue'
 import AdminPetSitterViewProfileRejectConfirmation from './AdminPetSitterView-Profile-RejectConfirmation.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
 import { useAdminPetSitterStore, type SitterStatus } from '../../stores/adminPetSitter'
-import { API_BASE_URL } from '../../config/api'
+import { adminApi } from '../../services/adminApi'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
@@ -118,7 +117,7 @@ const fetchSitterDetail = async (id: string) => {
 	isLoading.value = true
 	errorMessage.value = ''
 	try {
-		const response = await axios.get<SitterProfileDetailResponse>(`${API_BASE_URL}/sitterprofile/${id}`)
+		const response = await adminApi.get<SitterProfileDetailResponse>(`/sitterprofile/${id}`)
 		profile.value = response.data.sitterProfile
 		sitterUser.value = response.data.user
 		petTypes.value = response.data.petTypes || []

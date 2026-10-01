@@ -71,7 +71,7 @@ const fetchOwners = async (pageNum: number, currentSearch: string) => {
 	errorMessage.value = ''
 
 	try {
-		const response = await axios.get<OwnerAdminPageResponse>(`${API_BASE_URL}/admin/owners`, {
+		const response = await adminApi.get<OwnerAdminPageResponse>('/admin/owners', {
 			params: {
 				page: pageNum,
 				limit: pageSize,

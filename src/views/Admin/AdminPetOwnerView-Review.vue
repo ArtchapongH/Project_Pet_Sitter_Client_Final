@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
@@ -35,7 +35,7 @@ const fetchOwnerReviews = async (ownerId: string) => {
 	errorMessage.value = ''
 
 	try {
-		const response = await axios.get<OwnerReviewsResponse>(`${API_BASE_URL}/admin/owners/${ownerId}`)
+		const response = await adminApi.get<OwnerReviewsResponse>(`/admin/owners/${ownerId}`)
 		owner.value = { name: response.data.name, avatarUrl: response.data.avatarUrl }
 		reviews.value = response.data.reviews || []
 	} catch (error) {
