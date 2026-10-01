@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { adminApi } from '../../services/adminApi'
 import { API_BASE_URL } from '../../config/api'
 
 interface PetOwner {

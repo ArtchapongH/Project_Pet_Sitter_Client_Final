@@ -55,10 +55,6 @@ router.beforeEach(to => {
     return true
   }
   const auth = useAuthStore()
-  if (to.path.startsWith('/admin')) {
-    if (!auth.isLoggedIn) return { path: '/login' }
-    return auth.isAdmin ? true : { path: '/' }
-  }
   if (!to.meta.owner) return true
   if (auth.isOwnerLoggedIn) return true
   return { path: '/login' }
