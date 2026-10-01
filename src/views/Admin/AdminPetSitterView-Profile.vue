@@ -87,6 +87,15 @@ const approvalStatus = ref<SitterStatus | null>(null)
 const isListed = ref(false)
 const showRejectConfirmation = ref(false)
 
+const petTypeColors: Record<string, { border: string; text: string }> = {
+	dog: { border: '#50d9a8', text: '#22c993' },
+	cat: { border: '#f38ab8', text: '#ed71a7' },
+	bird: { border: '#78c7f1', text: '#4eafe7' },
+}
+const defaultPetTypeColor = { border: '#b8bfd0', text: '#71778a' }
+
+const petTypeColor = (petType: string) => petTypeColors[petType.toLowerCase()] ?? defaultPetTypeColor
+
 // Waiting statuses show what the sitter submitted (pending_profile), everything else shows the live/applied data
 const usePendingProfile = computed(() => approvalStatus.value === 'Waiting for verify' || approvalStatus.value === 'Waiting for approve')
 
@@ -148,74 +157,37 @@ const handleRejectConfirm = async (reason: string) => {
 	showRejectConfirmation.value = false
 	if (!store.selectedSitterId) return
 
-	if (approvalStatus.value === 'Waiting for verify') {
-		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
-			approvalStatus.value = 'Unverified'
-			store.setApprovalStatus('Unverified')
-			await fetchSitterDetail(store.selectedSitterId)
-		} catch (error) {
-			console.error('Failed to reject pet sitter profile:', error)
-			errorMessage.value = 'Unable to reject pet sitter profile.'
-		}
-	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
-		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
-			approvalStatus.value = 'Rejected'
-			store.setApprovalStatus('Rejected')
-			await fetchSitterDetail(store.selectedSitterId)
-		} catch (error) {
-			console.error('Failed to reject pet sitter profile:', error)
-			errorMessage.value = 'Unable to reject pet sitter profile.'
-		}
-	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
-		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
-			approvalStatus.value = 'Rejected'
-			isListed.value = false
-			store.setApprovalStatus('Rejected')
-			await fetchSitterDetail(store.selectedSitterId)
-		} catch (error) {
-			console.error('Failed to reject pet sitter profile:', error)
-			errorMessage.value = 'Unable to reject pet sitter profile.'
-		}
+	if (approvalStatus.value !== 'Waiting for verify' && approvalStatus.value !== 'Waiting for approve') return
+
+	try {
+		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+		const nextStatus = approvalStatus.value === 'Waiting for verify' ? 'Unverified' : 'Rejected'
+		approvalStatus.value = nextStatus
+		isListed.value = false
+		store.setApprovalStatus(nextStatus)
+		await fetchSitterDetail(store.selectedSitterId)
+	} catch (error) {
+		console.error('Failed to reject pet sitter profile:', error)
+		errorMessage.value = 'Unable to reject pet sitter profile.'
 	}
 }
 
 const handleApprove = async () => {
 	if (!store.selectedSitterId) return
 
-	if (approvalStatus.value === 'Waiting for verify') {
-		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/verify`)
-			approvalStatus.value = 'Verified'
-			store.setApprovalStatus('Verified')
-			await fetchSitterDetail(store.selectedSitterId)
-		} catch (error) {
-			console.error('Failed to verify pet sitter profile:', error)
-			errorMessage.value = 'Unable to verify pet sitter profile.'
-		}
-	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
-		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
-			approvalStatus.value = 'Approved'
-			isListed.value = true
-			store.setApprovalStatus('Approved')
-			await fetchSitterDetail(store.selectedSitterId)
-		} catch (error) {
-			console.error('Failed to approve pet sitter profile:', error)
-			errorMessage.value = 'Unable to approve pet sitter profile.'
-		}
-	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
-		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
-			approvalStatus.value = 'Approved'
-			store.setApprovalStatus('Approved')
-			await fetchSitterDetail(store.selectedSitterId)
-		} catch (error) {
-			console.error('Failed to approve pet sitter profile:', error)
-			errorMessage.value = 'Unable to approve pet sitter profile.'
-		}
+	if (approvalStatus.value !== 'Waiting for verify' && approvalStatus.value !== 'Waiting for approve') return
+
+	try {
+		const endpoint = approvalStatus.value === 'Waiting for verify' ? 'verify' : 'approve'
+		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/${endpoint}`)
+		const nextStatus = approvalStatus.value === 'Waiting for verify' ? 'Verified' : 'Approved'
+		approvalStatus.value = nextStatus
+		isListed.value = nextStatus === 'Approved'
+		store.setApprovalStatus(nextStatus)
+		await fetchSitterDetail(store.selectedSitterId)
+	} catch (error) {
+		console.error('Failed to approve pet sitter profile:', error)
+		errorMessage.value = 'Unable to approve pet sitter profile.'
 	}
 }
 
@@ -323,7 +295,7 @@ const fullAddress = () => {
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Pet type</h2>
 						<div class="mt-2 flex flex-wrap gap-2">
-							<span v-for="petTypeName in displayPetTypeNames" :key="petTypeName" class="rounded-full border border-[#6fe0bc] px-2.5 py-0.5 text-[9px] text-[#20c995]">{{ petTypeName }}</span>
+							<span v-for="petTypeName in displayPetTypeNames" :key="petTypeName" class="rounded-full border px-2.5 py-0.5 text-[9px]" :style="{ borderColor: petTypeColor(petTypeName).border, color: petTypeColor(petTypeName).text }">{{ petTypeName }}</span>
 							<span v-if="displayPetTypeNames.length === 0" class="text-[9px] text-[#9297a9]">No pet types selected.</span>
 						</div>
 
