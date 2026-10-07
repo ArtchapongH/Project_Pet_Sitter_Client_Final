@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://project-pet-sitter-server-1.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://project-pet-sitter-server-final.onrender.com/api/:path*" },
     { "source": "/:path((?!api/).*)", "destination": "/index.html" }
   ]
 }
