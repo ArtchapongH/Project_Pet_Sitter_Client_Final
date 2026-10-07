@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { API_BASE_URL } from '../../config/api'
 
 interface OwnerBanStatusResponse {
 	isBanned: boolean | null
